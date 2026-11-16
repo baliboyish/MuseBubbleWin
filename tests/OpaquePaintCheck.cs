@@ -1,7 +1,7 @@
 using System;using System.IO;using System.Drawing;using System.Reflection;using System.Windows.Forms;
 class OpaquePaintCheck {
  [STAThread]static void Main(string[] args){Application.EnableVisualStyles();var assembly=Assembly.Load(File.ReadAllBytes(args[0]));var type=assembly.GetType("MuseBubbleWin.AppleButton");
- using(var button=(Button)Activator.CreateInstance(type,BindingFlags.NonPublic|BindingFlags.Instance,null,new object[]{"Balik ke app sebelumnya",null},null))
+ using(var button=(Button)Activator.CreateInstance(type,BindingFlags.NonPublic|BindingFlags.Instance,null,new object[]{"Back to previous app",null},null))
  using(var b=new Bitmap(440,200))using(var g=Graphics.FromImage(b)){
  button.Size=new Size(240,42);g.Clear(Color.Magenta);g.TranslateTransform(80,90);g.SetClip(new Rectangle(0,0,200,42));
  type.GetMethod("OnPaint",BindingFlags.NonPublic|BindingFlags.Instance).Invoke(button,new object[]{new PaintEventArgs(g,new Rectangle(0,0,200,42))});

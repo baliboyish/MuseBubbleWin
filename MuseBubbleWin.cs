@@ -306,7 +306,7 @@ namespace MuseBubbleWin
             {
                 int captured = sz;
                 ToolStripMenuItem it = new ToolStripMenuItem(
-                    sz == 84 ? "Kecil" : sz == 112 ? "Sedang" : "Besar");
+                    sz == 84 ? "Small" : sz == 112 ? "Medium" : "Large");
                 it.Click += delegate
                 {
                     settings.Size = captured;
@@ -501,7 +501,7 @@ namespace MuseBubbleWin
             HideChat();
             Hide();
             tray.ShowBalloonTip(2000, "Muse Bubble",
-                "Muse disembunyikan. Klik dua kali ikon tray untuk menampilkan.",
+                "Muse is hidden. Double-click the tray icon to show it.",
                 ToolTipIcon.Info);
         }
         public void ShowBubble()
