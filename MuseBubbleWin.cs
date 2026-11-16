@@ -294,14 +294,14 @@ namespace MuseBubbleWin
             menu.Font = new Font(Ui.FontName, 10);
             menu.Renderer = new AppleMenuRenderer(Light);
             menu.Padding = new Padding(5);
-            ToolStripMenuItem open = new ToolStripMenuItem("Buka Muse full");
+            ToolStripMenuItem open = new ToolStripMenuItem("Open Muse (full)");
             open.Click += delegate { OpenMuse(); };
-            ToolStripMenuItem chatItem = new ToolStripMenuItem("Chat Muse");
+            ToolStripMenuItem chatItem = new ToolStripMenuItem("Chat with Muse");
             chatItem.Click += delegate { ShowChat(); };
-            ToolStripMenuItem showPanel = new ToolStripMenuItem("Panel");
+            ToolStripMenuItem showPanel = new ToolStripMenuItem("Quick panel");
             showPanel.Click += delegate { ShowPanel(); };
 
-            ToolStripMenuItem sizeMenu = new ToolStripMenuItem("Ukuran");
+            ToolStripMenuItem sizeMenu = new ToolStripMenuItem("Size");
             foreach (int sz in new int[] { 84, 112, 148 })
             {
                 int captured = sz;
@@ -314,7 +314,7 @@ namespace MuseBubbleWin
                 };
                 sizeMenu.DropDownItems.Add(it);
             }
-            ToolStripMenuItem opMenu = new ToolStripMenuItem("Opasitas");
+            ToolStripMenuItem opMenu = new ToolStripMenuItem("Opacity");
             foreach (double op in new double[] { 1.0, 0.85, 0.7 })
             {
                 double captured = op;
@@ -326,27 +326,27 @@ namespace MuseBubbleWin
                 };
                 opMenu.DropDownItems.Add(it);
             }
-            ToolStripMenuItem themeMenu = new ToolStripMenuItem("Tema");
-            themeDarkItem = new ToolStripMenuItem("Gelap");
+            ToolStripMenuItem themeMenu = new ToolStripMenuItem("Theme");
+            themeDarkItem = new ToolStripMenuItem("Dark");
             themeDarkItem.Checked = !Light;
             themeDarkItem.Click += delegate { SetTheme("dark"); };
-            themeLightItem = new ToolStripMenuItem("Terang");
+            themeLightItem = new ToolStripMenuItem("Light");
             themeLightItem.Checked = Light;
             themeLightItem.Click += delegate { SetTheme("light"); };
             themeMenu.DropDownItems.Add(themeDarkItem);
             themeMenu.DropDownItems.Add(themeLightItem);
-            ToolStripMenuItem auto = new ToolStripMenuItem("Auto-start Windows");
+            ToolStripMenuItem auto = new ToolStripMenuItem("Start with Windows");
             auto.Checked = IsAutoStart();
             auto.Click += delegate
             {
                 SetAutoStart(!auto.Checked);
                 auto.Checked = IsAutoStart();
             };
-            ToolStripMenuItem hide = new ToolStripMenuItem("Sembunyikan ke tray");
+            ToolStripMenuItem hide = new ToolStripMenuItem("Hide to tray");
             hide.Click += delegate { HideAll(); };
-            ToolStripMenuItem show = new ToolStripMenuItem("Tampilkan");
+            ToolStripMenuItem show = new ToolStripMenuItem("Show");
             show.Click += delegate { ShowBubble(); };
-            ToolStripMenuItem exit = new ToolStripMenuItem("Keluar");
+            ToolStripMenuItem exit = new ToolStripMenuItem("Exit");
             exit.Click += delegate { allowExit = true; Close(); };
 
             menu.Items.Add(open);
@@ -608,10 +608,10 @@ namespace MuseBubbleWin
             Controls.Add(title);
             titleLbl = title;
 
-            AddButton("Chat Muse", 58, delegate { owner2.ShowChat(); });
-            AddButton("Buka Muse full", 106, delegate { owner2.OpenMuse(); owner2.HidePanel(); });
-            AddButton("Balik ke app sebelumnya", 154, delegate { owner2.GoBack(); });
-            AddButton("Sembunyikan", 202, delegate { owner2.HideAll(); });
+            AddButton("Chat with Muse", 58, delegate { owner2.ShowChat(); });
+            AddButton("Open Muse (full)", 106, delegate { owner2.OpenMuse(); owner2.HidePanel(); });
+            AddButton("Back to previous app", 154, delegate { owner2.GoBack(); });
+            AddButton("Hide", 202, delegate { owner2.HideAll(); });
 
             Deactivate += delegate { Hide(); };
             VisibleChanged += delegate
@@ -791,7 +791,7 @@ namespace MuseBubbleWin
             // Dock the title bar first, then fill the remaining space with content.
             themeBar.SendToBack();
             loading = new Label();
-            loading.Text = "Memuat Muse...";
+            loading.Text = "Loading Muse...";
             loading.ForeColor = Ivory;
             loading.Font = new Font(Ui.FontName, 10);
             loading.Dock = DockStyle.Fill;
@@ -958,8 +958,8 @@ namespace MuseBubbleWin
             }
             catch (Exception ex)
             {
-                loading.Text = "Chat gagal dimuat: " + ex.Message
-                    + "\r\nPakai Panel cepat / Buka Muse full dulu ya, beb.";
+                loading.Text = "Chat failed to load: " + ex.Message
+                    + "\r\nUse the quick panel or Open Muse (full) for now.";
             }
         }
     }

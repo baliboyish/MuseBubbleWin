@@ -10,7 +10,7 @@
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <RootNamespace>MuseBubbleWin</RootNamespace>
     <AssemblyName>MuseBubbleWin</AssemblyName>
-    <Version>0.7.0</Version>
+    <Version>0.7.1</Version>
     <Description>Unofficial floating Windows desktop wrapper for muse.ai.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/baliboyish/MuseBubbleWin</RepositoryUrl>

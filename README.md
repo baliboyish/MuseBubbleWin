@@ -91,11 +91,10 @@ No prebuilt executable or browser profile is committed to the source repository.
 - Drag the chat title bar to move it.
 - Right-click that title bar to toggle **Style Muse page**, enable attachment tracing, or open DevTools.
 - Click **+** in the message box to attach a file; the app's own Windows file picker opens.
-- Double-click the tray icon (or choose **Tampilkan**) to bring back a hidden bubble.
+- Double-click the tray icon (or choose **Show**) to bring back a hidden bubble.
 - Bubble position, size, opacity, and theme are remembered between runs.
-- Choose **Keluar** in the tray menu to quit. Closing/hiding chat leaves the bubble running.
+- Choose **Exit** in the tray menu to quit. Closing/hiding chat leaves the bubble running.
 
-Some action labels are currently in Indonesian; localization contributions are welcome.
 
 ## Local data
 
