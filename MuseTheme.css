@@ -52,4 +52,12 @@ html[data-musebubble-theme] :is(button, a, textarea, input, [contenteditable="tr
   outline: 2px solid var(--mb-accent) !important;
   outline-offset: 2px;
 }
+/* Keep focus on the rounded composer, rather than a square around its editor. */
+html[data-musebubble-theme] [data-musebubble-composer]:focus-within {
+  box-shadow: var(--mb-shadow), inset 0 0 0 1px var(--mb-accent) !important;
+}
+html[data-musebubble-theme] [data-musebubble-composer] :is(textarea, input:not([type="file"]), [contenteditable="true"]):focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
 html[data-musebubble-theme] { scrollbar-width: thin; scrollbar-color: var(--mb-line) var(--mb-surface); }
