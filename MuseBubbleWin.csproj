@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <PlatformTarget>x64</PlatformTarget>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <RootNamespace>MuseBubbleWin</RootNamespace>
+    <AssemblyName>MuseBubbleWin</AssemblyName>
+    <Version>0.7.0</Version>
+    <Description>Unofficial floating Windows desktop wrapper for muse.ai.</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/baliboyish/MuseBubbleWin</RepositoryUrl>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="MuseBubbleWin.cs" />
+    <Compile Include="AppleTheme.cs" />
+    <Compile Include="FilePickerBridge.cs" />
+    <Compile Include="MuseOfficialIcon.cs" />
+    <EmbeddedResource Include="MuseTheme.js" LogicalName="MuseTheme.js" />
+    <EmbeddedResource Include="MuseTheme.css" LogicalName="MuseTheme.css" />
+    <Reference Include="System.Web.Extensions" />
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.2903.40" />
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+  </ItemGroup>
+</Project>

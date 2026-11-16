@@ -1,0 +1,55 @@
+/* Scoped paint-only integration. Muse owns document content, layout, and input events. */
+html[data-musebubble-theme="light"] {
+  color-scheme: light;
+  --mb-surface: #f8f8fc;
+  --mb-raised: #ffffff;
+  --mb-soft: #eeeff7;
+  --mb-ink: #20212a;
+  --mb-muted: #626574;
+  --mb-accent: #0066e8;
+  --mb-line: #dcdee8;
+  --mb-shadow: 0 4px 18px #2529510d;
+}
+html[data-musebubble-theme="dark"] {
+  color-scheme: dark;
+  --mb-surface: #20222d;
+  --mb-raised: #303340;
+  --mb-soft: #383c4b;
+  --mb-ink: #f5f5fa;
+  --mb-muted: #b6bac9;
+  --mb-accent: #6aa5ff;
+  --mb-line: #484c5c;
+  --mb-shadow: 0 4px 18px #080a1626;
+}
+html[data-musebubble-theme] body {
+  background-color: var(--mb-surface) !important;
+  color: var(--mb-ink) !important;
+  font-family: Inter, "Segoe UI", sans-serif !important;
+  -webkit-font-smoothing: antialiased;
+}
+html[data-musebubble-theme] :is(button, input, textarea, [contenteditable="true"]) {
+  font-family: inherit;
+}
+html[data-musebubble-theme] :is(.bg-background, .bg-surface) { background-color: var(--mb-surface) !important; }
+html[data-musebubble-theme] :is(.bg-card, .bg-popover) { background-color: var(--mb-raised) !important; }
+html[data-musebubble-theme] :is(.bg-muted, .bg-secondary) { background-color: var(--mb-soft) !important; }
+html[data-musebubble-theme] .text-foreground { color: var(--mb-ink) !important; }
+html[data-musebubble-theme] .text-muted-foreground { color: var(--mb-muted) !important; }
+html[data-musebubble-theme] .border-border { border-color: var(--mb-line) !important; }
+html[data-musebubble-theme] [data-musebubble-composer] {
+  background-color: var(--mb-raised) !important;
+  color: var(--mb-ink) !important;
+  border-radius: 24px !important;
+  box-shadow: var(--mb-shadow), inset 0 0 0 1px var(--mb-line) !important;
+}
+html[data-musebubble-theme] [data-musebubble-composer] :is(textarea, [contenteditable="true"]) {
+  background-color: transparent !important;
+  color: var(--mb-ink) !important;
+  caret-color: var(--mb-accent);
+}
+html[data-musebubble-theme] textarea::placeholder { color: var(--mb-muted) !important; }
+html[data-musebubble-theme] :is(button, a, textarea, input, [contenteditable="true"]):focus-visible {
+  outline: 2px solid var(--mb-accent) !important;
+  outline-offset: 2px;
+}
+html[data-musebubble-theme] { scrollbar-width: thin; scrollbar-color: var(--mb-line) var(--mb-surface); }

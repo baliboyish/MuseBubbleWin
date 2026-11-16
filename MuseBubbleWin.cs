@@ -17,11 +17,14 @@ namespace MuseBubbleWin
     static class Program
     {
         [STAThread]
-        static void Main()
+        static void Main(string[] args)
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new BubbleForm());
+            var bubble = new BubbleForm();
+            if (Array.IndexOf(args, "--show-chat") >= 0)
+                bubble.Shown += delegate { bubble.ShowChat(); };
+            Application.Run(bubble);
         }
     }
 
@@ -66,6 +69,8 @@ namespace MuseBubbleWin
         public static extern bool IsIconic(IntPtr hWnd);
         [DllImport("user32.dll")]
         public static extern bool ShowWindow(IntPtr hWnd, int cmd);
+        [DllImport("user32.dll")]
+        public static extern bool DestroyIcon(IntPtr handle);
         public const int ULW_ALPHA = 0x02;
         public const byte AC_SRC_OVER = 0x00;
         public const byte AC_SRC_ALPHA = 0x01;
@@ -75,9 +80,9 @@ namespace MuseBubbleWin
     // ---------- Settings ----------
     class Settings
     {
-        public int X = -1, Y = -1, Size = 112;
+        public int X = -1, Y = -1, Size = 84;
         public double Opacity = 1.0;
-        public string Theme = "dark";
+        public string Theme = "light";
         static string Dir { get { return Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "MuseBubbleWin"); } }
         static string FilePath { get { return Path.Combine(Dir, "settings.ini"); } }
@@ -139,8 +144,8 @@ namespace MuseBubbleWin
 
     public class BubbleForm : Form
     {
+        readonly bool previewMode;
         readonly Settings settings = new Settings();
-        readonly Image avatar;
         PanelForm panel;
         ChatForm chat;
         NotifyIcon tray;
@@ -155,13 +160,12 @@ namespace MuseBubbleWin
         Icon trayIconKeep;
         Bitmap trayBmpKeep;
 
-        public BubbleForm()
-        {
-            settings.Load();
-            using (Stream s = Assembly.GetExecutingAssembly()
-                .GetManifestResourceStream("avatar.png"))
-                avatar = Image.FromStream(s);
+        public BubbleForm() : this(false) { }
 
+        internal BubbleForm(bool previewMode)
+        {
+            this.previewMode = previewMode;
+            if (!previewMode) settings.Load();
             FormBorderStyle = FormBorderStyle.None;
             ShowInTaskbar = false;
             TopMost = true;
@@ -173,7 +177,7 @@ namespace MuseBubbleWin
             Location = new Point(x, y);
 
             BuildMenu();
-            BuildTray();
+            if (!previewMode) BuildTray();
             panel = new PanelForm(this);
             chat = new ChatForm(this);
 
@@ -207,7 +211,7 @@ namespace MuseBubbleWin
             {
                 clickTimer.Stop();
                 HidePanel();
-                OpenClaude();
+                OpenMuse();
             };
             MouseWheel += OnWheel;
             MouseEnter += delegate { hoverOpenTimer.Start(); };
@@ -224,52 +228,33 @@ namespace MuseBubbleWin
             }
         }
 
-        protected override void OnShown(EventArgs e)
+        protected override async void OnShown(EventArgs e)
         {
             base.OnShown(e);
             Render();
-            chat.InitWeb();
+            if (!previewMode) chat.InitWeb();
+            if (!previewMode)
+            {
+                try
+                {
+                    if (await MuseOfficialIcon.LoadAsync())
+                    {
+                        if (IsDisposed) return;
+                        Render();
+                        RefreshTrayIcon();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine("Official Muse icon: " + ex);
+                }
+            }
         }
 
         // ----- rendering -----
         Bitmap RenderBubbleBitmap()
         {
-            int s = settings.Size;
-            Bitmap bmp = new Bitmap(s, s, PixelFormat.Format32bppArgb);
-            using (Graphics g = Graphics.FromImage(bmp))
-            {
-                g.SmoothingMode = SmoothingMode.AntiAlias;
-                g.InterpolationMode = InterpolationMode.HighQualityBicubic;
-                RectangleF circle = new RectangleF(4, 4, s - 8, s - 8);
-                using (GraphicsPath path = new GraphicsPath())
-                {
-                    path.AddEllipse(circle);
-                    GraphicsState st = g.Save();
-                    g.SetClip(path);
-                    g.DrawImage(avatar, circle);
-                    g.Restore(st);
-                }
-                if (Light)
-                {
-                    RectangleF shadow = new RectangleF(
-                        circle.X + 1, circle.Y + 3, circle.Width, circle.Height);
-                    using (Pen sh = new Pen(Color.FromArgb(45, 0, 0, 0), 8))
-                        g.DrawEllipse(sh, shadow);
-                    using (Pen ring = new Pen(Color.FromArgb(255, 255, 255, 255), 4))
-                        g.DrawEllipse(ring, circle);
-                    using (Pen edge = new Pen(Color.FromArgb(70, 0, 0, 0), 1))
-                        g.DrawEllipse(edge, new RectangleF(
-                            circle.X - 2, circle.Y - 2, circle.Width + 4, circle.Height + 4));
-                }
-                else
-                {
-                    using (Pen glow = new Pen(Color.FromArgb(80, 125, 226, 255), 7))
-                        g.DrawEllipse(glow, circle);
-                    using (Pen ring = new Pen(Color.FromArgb(255, 125, 226, 255), 2.5f))
-                        g.DrawEllipse(ring, circle);
-                }
-            }
-            return bmp;
+            return MuseOfficialIcon.Render(settings.Size, Light);
         }
 
         void SetBitmap(Bitmap bitmap, byte alpha)
@@ -306,8 +291,11 @@ namespace MuseBubbleWin
         void BuildMenu()
         {
             menu = new ContextMenuStrip();
+            menu.Font = new Font(Ui.FontName, 10);
+            menu.Renderer = new AppleMenuRenderer(Light);
+            menu.Padding = new Padding(5);
             ToolStripMenuItem open = new ToolStripMenuItem("Buka Muse full");
-            open.Click += delegate { OpenClaude(); };
+            open.Click += delegate { OpenMuse(); };
             ToolStripMenuItem chatItem = new ToolStripMenuItem("Chat Muse");
             chatItem.Click += delegate { ShowChat(); };
             ToolStripMenuItem showPanel = new ToolStripMenuItem("Panel");
@@ -339,10 +327,10 @@ namespace MuseBubbleWin
                 opMenu.DropDownItems.Add(it);
             }
             ToolStripMenuItem themeMenu = new ToolStripMenuItem("Tema");
-            themeDarkItem = new ToolStripMenuItem("Gelap (charcoal)");
+            themeDarkItem = new ToolStripMenuItem("Gelap");
             themeDarkItem.Checked = !Light;
             themeDarkItem.Click += delegate { SetTheme("dark"); };
-            themeLightItem = new ToolStripMenuItem("Terang (Apple)");
+            themeLightItem = new ToolStripMenuItem("Terang");
             themeLightItem.Checked = Light;
             themeLightItem.Click += delegate { SetTheme("light"); };
             themeMenu.DropDownItems.Add(themeDarkItem);
@@ -378,33 +366,37 @@ namespace MuseBubbleWin
 
         void BuildTray()
         {
-            trayBmpKeep = new Bitmap(32, 32, PixelFormat.Format32bppArgb);
-            using (Graphics g = Graphics.FromImage(trayBmpKeep))
-            {
-                g.SmoothingMode = SmoothingMode.AntiAlias;
-                using (GraphicsPath p = new GraphicsPath())
-                {
-                    p.AddEllipse(1, 1, 30, 30);
-                    GraphicsState st = g.Save(); g.SetClip(p);
-                    g.DrawImage(avatar, new Rectangle(0, 0, 32, 32));
-                    g.Restore(st);
-                }
-            }
-            trayIconKeep = Icon.FromHandle(trayBmpKeep.GetHicon());
             tray = new NotifyIcon();
-            tray.Icon = trayIconKeep;
+            RefreshTrayIcon();
             tray.Text = "Muse Bubble";
             tray.Visible = true;
             tray.ContextMenuStrip = menu;
             tray.DoubleClick += delegate { ShowBubble(); };
         }
 
+        void RefreshTrayIcon()
+        {
+            if (tray == null) return;
+            Bitmap bitmap = MuseOfficialIcon.Render(32, Light);
+            IntPtr handle = bitmap.GetHicon();
+            Icon icon;
+            try { using (Icon borrowed = Icon.FromHandle(handle)) icon = (Icon)borrowed.Clone(); }
+            finally { Native.DestroyIcon(handle); }
+            tray.Icon = icon;
+            if (trayIconKeep != null) trayIconKeep.Dispose();
+            if (trayBmpKeep != null) trayBmpKeep.Dispose();
+            trayIconKeep = icon;
+            trayBmpKeep = bitmap;
+        }
+
         public void SetTheme(string t)
         {
             settings.Theme = t;
+            menu.Renderer = new AppleMenuRenderer(Light);
             if (themeDarkItem != null) themeDarkItem.Checked = t == "dark";
             if (themeLightItem != null) themeLightItem.Checked = t == "light";
             Render();
+            RefreshTrayIcon();
             if (panel != null) panel.ApplyTheme();
             if (chat != null) chat.ApplyTheme();
             Persist();
@@ -452,7 +444,7 @@ namespace MuseBubbleWin
         }
 
         // ----- actions -----
-        public void OpenClaude()
+        public void OpenMuse()
         {
             string url = "https://muse.ai";
             string[] candidates = new string[] {
@@ -509,7 +501,7 @@ namespace MuseBubbleWin
             HideChat();
             Hide();
             tray.ShowBalloonTip(2000, "Muse Bubble",
-                "Aku ngumpet di tray â€” double click ikonku buat nampilin lagi",
+                "Muse disembunyikan. Klik dua kali ikon tray untuk menampilkan.",
                 ToolTipIcon.Info);
         }
         public void ShowBubble()
@@ -520,6 +512,7 @@ namespace MuseBubbleWin
 
         void Persist()
         {
+            if (previewMode) return;
             settings.X = Left; settings.Y = Top;
             settings.Save();
         }
@@ -576,6 +569,8 @@ namespace MuseBubbleWin
             }
             Persist();
             if (tray != null) { tray.Visible = false; tray.Dispose(); }
+            if (trayIconKeep != null) trayIconKeep.Dispose();
+            if (trayBmpKeep != null) trayBmpKeep.Dispose();
         }
     }
 
@@ -598,22 +593,25 @@ namespace MuseBubbleWin
             ShowInTaskbar = false;
             TopMost = true;
             BackColor = Bg;
-            Size = new Size(250, 216);
+            AutoScaleMode = AutoScaleMode.Dpi;
+            AutoScaleDimensions = new SizeF(96, 96);
+            Size = new Size(272, 266);
             StartPosition = FormStartPosition.Manual;
 
             Label title = new Label();
-            title.Text = "\u2726 Muse";
+            title.Text = "Muse";
             title.ForeColor = Gold;
             title.Font = new Font(Ui.FontName, 12, FontStyle.Bold);
-            title.Location = new Point(14, 10);
+            title.Location = new Point(20, 18);
+            title.BackColor = Color.Transparent;
             title.AutoSize = true;
             Controls.Add(title);
             titleLbl = title;
 
-            AddButton("Chat Muse", 48, delegate { owner2.ShowChat(); });
-            AddButton("Buka Muse full", 88, delegate { owner2.OpenClaude(); owner2.HidePanel(); });
-            AddButton("Balik ke app sebelumnya", 128, delegate { owner2.GoBack(); });
-            AddButton("Sembunyikan", 168, delegate { owner2.HideAll(); });
+            AddButton("Chat Muse", 58, delegate { owner2.ShowChat(); });
+            AddButton("Buka Muse full", 106, delegate { owner2.OpenMuse(); owner2.HidePanel(); });
+            AddButton("Balik ke app sebelumnya", 154, delegate { owner2.GoBack(); });
+            AddButton("Sembunyikan", 202, delegate { owner2.HideAll(); });
 
             Deactivate += delegate { Hide(); };
             VisibleChanged += delegate
@@ -625,34 +623,35 @@ namespace MuseBubbleWin
 
         public void ApplyTheme()
         {
-            bool light = owner2.Light;
-            Color bg = light ? Color.FromArgb(245, 245, 247) : Color.FromArgb(42, 39, 36);
-            Color btn = light ? Color.FromArgb(232, 232, 237) : Color.FromArgb(58, 53, 47);
-            Color txt = light ? Color.FromArgb(29, 29, 31) : Color.FromArgb(245, 240, 230);
-            Color acc = light ? Color.FromArgb(0, 113, 227) : Color.FromArgb(212, 175, 105);
-            BackColor = bg;
-            if (titleLbl != null) titleLbl.ForeColor = acc;
-            foreach (Button b in btns) { b.BackColor = btn; b.ForeColor = txt; }
+            var palette = new ApplePalette(owner2.Light);
+            BackColor = palette.Surface;
+            if (titleLbl != null) titleLbl.ForeColor = palette.Ink;
+            foreach (Button b in btns)
+            {
+                var apple = b as AppleButton;
+                if (apple != null) { apple.Palette = palette; apple.Selected = b == btns[0]; }
+                b.ForeColor = palette.Ink;
+                b.Invalidate();
+            }
+            ApplyRegion(); Invalidate();
         }
 
         void ApplyRegion()
         {
-            IntPtr rgn = Native.CreateRoundRectRgn(0, 0, Width + 1, Height + 1, 16, 16);
-            Region = Region.FromHrgn(rgn);
+            AppleDrawing.RoundWindow(this, owner2.Light);
         }
 
         void AddButton(string text, int y, EventHandler onClick)
         {
-            Button b = new Button();
-            b.Text = text;
+            Button b = new AppleButton(text, null);
             b.FlatStyle = FlatStyle.Flat;
             b.FlatAppearance.BorderSize = 0;
-            b.BackColor = BtnBg;
+            b.BackColor = new ApplePalette(owner2.Light).Surface;
             b.ForeColor = Ivory;
             b.Font = new Font(Ui.FontName, 10);
             b.TextAlign = ContentAlignment.MiddleLeft;
-            b.Location = new Point(14, y);
-            b.Size = new Size(222, 34);
+            b.Location = new Point(16, y);
+            b.Size = new Size(240, 42);
             b.Click += onClick;
             Controls.Add(b);
             btns.Add(b);
@@ -733,9 +732,8 @@ namespace MuseBubbleWin
         WebView2 web;
         Label loading;
         bool inited;
-        Panel barPanel;
-        Label titleLbl;
-        readonly List<Button> btns = new List<Button>();
+        AppleTitleBar themeBar;
+        bool styleMusePage = true;
         static readonly Color Bg = Color.FromArgb(42, 39, 36);
         static readonly Color BtnBg = Color.FromArgb(58, 53, 47);
         static readonly Color Ivory = Color.FromArgb(245, 240, 230);
@@ -751,23 +749,19 @@ namespace MuseBubbleWin
             Size = new Size(392, 560);
             StartPosition = FormStartPosition.Manual;
 
-            Panel bar = new Panel();
-            bar.BackColor = Bg;
-            bar.Location = new Point(0, 0);
-            bar.Size = new Size(392, 40);
-            bar.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            Controls.Add(bar);
-            barPanel = bar;
-
-            Label title = new Label();
-            title.Text = "\u2726 Muse Chat";
-            title.ForeColor = Gold;
-            title.Font = new Font(Ui.FontName, 11, FontStyle.Bold);
-            title.Location = new Point(12, 9);
-            title.AutoSize = true;
-            bar.Controls.Add(title);
-            titleLbl = title;
-
+            AutoScaleMode = AutoScaleMode.Dpi;
+            AutoScaleDimensions = new SizeF(96, 96);
+            Text = "Muse";
+            Size = new Size(392, 600);
+            MinimumSize = new Size(340, 460);
+            themeBar = new AppleTitleBar();
+            themeBar.Dock = DockStyle.Top;
+            Controls.Add(themeBar);
+            themeBar.CloseButton.Click += delegate { Hide(); };
+            themeBar.BackButton.Click += delegate { owner2.GoBack(); };
+            themeBar.FullButton.Click += delegate { owner2.OpenMuse(); };
+            themeBar.ThemeButton.Click += delegate { owner2.SetTheme(owner2.Light ? "dark" : "light"); };
+            themeBar.PinButton.Click += delegate { TopMost = !TopMost; themeBar.Apply(owner2.Light, TopMost); };
             ContextMenuStrip diagnostics = new ContextMenuStrip();
             diagnostics.Items.Add("Trace attachment click", null, delegate
             {
@@ -780,42 +774,35 @@ namespace MuseBubbleWin
             {
                 if (web.CoreWebView2 != null) web.CoreWebView2.OpenDevToolsWindow();
             });
-            title.ContextMenuStrip = diagnostics;
-            bar.ContextMenuStrip = diagnostics;
-
-            Button btnBack = BarButton("Balik", 178, 66);
-            btnBack.Click += delegate { owner2.GoBack(); };
-            bar.Controls.Add(btnBack);
-            btns.Add(btnBack);
-            Button btnFull = BarButton("Full", 250, 58);
-            btnFull.Click += delegate { owner2.OpenClaude(); };
-            bar.Controls.Add(btnFull);
-            btns.Add(btnFull);
-            Button btnClose = BarButton("Tutup", 314, 66);
-            btnClose.Click += delegate { Hide(); };
-            bar.Controls.Add(btnClose);
-            btns.Add(btnClose);
-
+            ToolStripMenuItem stylePage = new ToolStripMenuItem("Style Muse page");
+            stylePage.Checked = true;
+            stylePage.CheckOnClick = true;
+            stylePage.CheckedChanged += delegate { styleMusePage = stylePage.Checked; ApplyWebTheme(); };
+            diagnostics.Items.Insert(0, stylePage);
+            diagnostics.Renderer = new AppleMenuRenderer(owner2.Light);
+            themeBar.ContextMenuStrip = diagnostics;
+            themeBar.Title.ContextMenuStrip = diagnostics;
             loading = new Label();
             loading.Text = "Memuat Muse...";
             loading.ForeColor = Ivory;
             loading.Font = new Font(Ui.FontName, 10);
-            loading.Location = new Point(0, 40);
-            loading.Size = new Size(392, 520);
+            loading.Location = new Point(1, 52);
+            loading.Size = new Size(390, 536);
             loading.Anchor = AnchorStyles.Top | AnchorStyles.Bottom
                 | AnchorStyles.Left | AnchorStyles.Right;
             loading.TextAlign = ContentAlignment.MiddleCenter;
             Controls.Add(loading);
 
             web = new WebView2();
-            web.Location = new Point(0, 40);
-            web.Size = new Size(392, 520);
+            web.Location = new Point(1, 52);
+            web.Size = new Size(390, 536);
             web.Anchor = AnchorStyles.Top | AnchorStyles.Bottom
                 | AnchorStyles.Left | AnchorStyles.Right;
             web.Visible = false;
             Controls.Add(web);
 
             VisibleChanged += delegate { if (Visible) ApplyRegion(); };
+            SizeChanged += delegate { if (Visible) ApplyRegion(); };
             Activated += delegate { if (web.Visible) web.Focus(); };
             ApplyTheme();
         }
@@ -880,38 +867,61 @@ namespace MuseBubbleWin
 
         public void ApplyTheme()
         {
-            bool light = owner2.Light;
-            Color bg = light ? Color.FromArgb(245, 245, 247) : Color.FromArgb(42, 39, 36);
-            Color btn = light ? Color.FromArgb(232, 232, 237) : Color.FromArgb(58, 53, 47);
-            Color txt = light ? Color.FromArgb(29, 29, 31) : Color.FromArgb(245, 240, 230);
-            Color acc = light ? Color.FromArgb(0, 113, 227) : Color.FromArgb(212, 175, 105);
-            BackColor = bg;
-            if (barPanel != null) barPanel.BackColor = bg;
-            if (titleLbl != null) titleLbl.ForeColor = acc;
-            loading.ForeColor = txt;
-            foreach (Button b in btns) { b.BackColor = btn; b.ForeColor = txt; }
+            var palette = new ApplePalette(owner2.Light);
+            BackColor = palette.Surface;
+            themeBar.Apply(owner2.Light, TopMost);
+            loading.BackColor = palette.Surface;
+            loading.ForeColor = palette.Muted;
+            web.DefaultBackgroundColor = palette.Surface;
+            if (themeBar.ContextMenuStrip != null)
+                themeBar.ContextMenuStrip.Renderer = new AppleMenuRenderer(owner2.Light);
+            ApplyRegion();
+            ApplyWebTheme();
+            Invalidate();
         }
 
-        Button BarButton(string text, int x, int w)
+        string Embedded(string name)
         {
-            Button b = new Button();
-            b.Text = text;
-            b.FlatStyle = FlatStyle.Flat;
-            b.FlatAppearance.BorderSize = 0;
-            b.BackColor = BtnBg;
-            b.ForeColor = Ivory;
-            b.Font = new Font(Ui.FontName, 9);
-            b.Location = new Point(x, 6);
-            b.Size = new Size(w, 28);
-            return b;
+            using (var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(name))
+            {
+                if (stream == null) throw new InvalidOperationException("Missing theme resource: " + name);
+                using (var reader = new StreamReader(stream)) return reader.ReadToEnd();
+            }
         }
 
-        void ApplyRegion()
+        string BuildWebThemeScript()
         {
-            IntPtr rgn = Native.CreateRoundRectRgn(0, 0, Width + 1, Height + 1, 16, 16);
-            Region = Region.FromHrgn(rgn);
+            var json = new System.Web.Script.Serialization.JavaScriptSerializer();
+            return Embedded("MuseTheme.js").Replace("__MUSEBUBBLE_CSS__", json.Serialize(Embedded("MuseTheme.css")));
         }
 
+        async void ApplyWebTheme()
+        {
+            if (web.CoreWebView2 == null) return;
+            try
+            {
+                web.CoreWebView2.Profile.PreferredColorScheme = owner2.Light
+                    ? CoreWebView2PreferredColorScheme.Light : CoreWebView2PreferredColorScheme.Dark;
+                string result = await web.CoreWebView2.ExecuteScriptAsync(BuildWebThemeScript() +
+                    "\n(()=>{if(!window.__museBubbleTheme)return 'out-of-scope';window.__museBubbleTheme('" +
+                    (owner2.Light ? "light" : "dark") + "'," + (styleMusePage ? "true" : "false") +
+                    ");return JSON.stringify({theme:document.documentElement.getAttribute('data-musebubble-theme')," +
+                    "composers:document.querySelectorAll('[data-musebubble-composer]').length});})();");
+                Trace("Page theme applied: " + result);
+            }
+            catch (Exception ex) { Trace("Page theme failed: " + ex); }
+        }
+
+        void ApplyRegion() { AppleDrawing.RoundWindow(this, owner2.Light); }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            base.OnPaint(e);
+            if (Width < 4 || Height < 4) return;
+            using (var pen = new Pen(new ApplePalette(owner2.Light).Border))
+            using (var path = AppleDrawing.Rounded(new RectangleF(.5f, .5f, ClientSize.Width - 1, ClientSize.Height - 1), 20 * this.DeviceScale()))
+                e.Graphics.DrawPath(pen, path);
+        }
         public async void InitWeb()
         {
             if (inited) return;
@@ -926,11 +936,7 @@ namespace MuseBubbleWin
                     await CoreWebView2Environment.CreateAsync(null, udf, null);
                 await web.EnsureCoreWebView2Async(env);
                 ConfigureFilePicker(web.CoreWebView2, this);
-                web.CoreWebView2.PermissionRequested +=
-                    delegate(object s, CoreWebView2PermissionRequestedEventArgs e)
-                    {
-                        e.State = CoreWebView2PermissionState.Allow;
-                    };
+                await web.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(BuildWebThemeScript());
                 web.CoreWebView2.WebMessageReceived += delegate(object sender, CoreWebView2WebMessageReceivedEventArgs args)
                 {
                     if (traceEnabled && args.WebMessageAsJson.Contains("\"museAttachmentTrace\":true"))
@@ -943,6 +949,7 @@ namespace MuseBubbleWin
                 {
                     loading.Visible = false;
                     web.Visible = true;
+                    ApplyWebTheme();
                 };
                 web.ZoomFactor = 0.9;
                 web.Source = new Uri("https://muse.ai");

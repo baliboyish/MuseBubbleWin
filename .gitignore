@@ -1,0 +1,29 @@
+# Build output and dependencies
+bin/
+obj/
+artifacts/
+.packages/
+*.exe
+*.dll
+*.pdb
+*.zip
+*.nupkg
+
+# Local app state, diagnostics, and authentication profiles
+WebView2Data/
+EBWebView/
+settings.ini
+muse-official-icon.png
+*.log
+.debug/
+backup/
+.env
+.env.*
+
+# IDE and OS state
+.vs/
+.vscode/
+*.user
+*.suo
+Thumbs.db
+Desktop.ini
