@@ -15,7 +15,12 @@ class ThemeChecks {
  Application.EnableVisualStyles();Application.SetCompatibleTextRenderingDefault(false);
  using(var owner=new BubbleForm(true)){
  var chat=Field<ChatForm>(owner,"chat");var panel=Field<PanelForm>(owner,"panel");
- IntPtr handle=chat.Handle; chat.PerformLayout();
+ // A hidden Dock=Fill control is not laid out. Exercise the actual visible browser
+ // surface (without navigating or creating a signed-in browser environment).
+ chat.Location=new Point(-20000,-20000);chat.Show();
+ Field<Label>(chat,"loading").Visible=false;
+ Field<Microsoft.Web.WebView2.WinForms.WebView2>(chat,"web").Visible=true;
+ chat.PerformLayout();
  foreach(bool light in new[]{true,false}){
  owner.SetTheme(light?"light":"dark");
  foreach(float scale in new[]{1f,1.25f,1.5f}){
@@ -29,7 +34,12 @@ class ThemeChecks {
  }
  Assert(bar.CloseButton.Right<=bar.BackButton.Left&&bar.BackButton.Right<=bar.FullButton.Left,"Traffic targets do not overlap "+scale);
  var browser=Field<Microsoft.Web.WebView2.WinForms.WebView2>(chat,"web");
- Assert(browser.Top>=bar.Bottom&&browser.Bottom<=chat.ClientSize.Height,"Browser inside frame "+scale);
+ // The browser is hosted in a content panel; compare all rectangles in form coordinates.
+ var browserBounds=chat.RectangleToClient(browser.Parent.RectangleToScreen(browser.Bounds));
+ Assert(browserBounds.Width>0&&browserBounds.Height>0&&
+   browserBounds.Left>=0&&browserBounds.Right<=chat.ClientSize.Width&&
+   browserBounds.Top>=bar.Bottom&&browserBounds.Bottom<=chat.ClientSize.Height,
+   "Browser inside frame "+scale+" browser="+browserBounds+" frame="+chat.ClientSize+" header="+bar.Bounds);
  Capture(chat,(light?"light":"dark")+"-"+scale.ToString(System.Globalization.CultureInfo.InvariantCulture));
  chat.Scale(new SizeF(1/scale,1/scale));chat.Size=initial;
  }

@@ -782,24 +782,26 @@ namespace MuseBubbleWin
             diagnostics.Renderer = new AppleMenuRenderer(owner2.Light);
             themeBar.ContextMenuStrip = diagnostics;
             themeBar.Title.ContextMenuStrip = diagnostics;
+            // Docking derives the browser rectangle from the current client area.
+            // Anchored absolute bounds can drift outside it after fractional DPI scaling.
+            Panel content = new Panel();
+            content.Dock = DockStyle.Fill;
+            content.Padding = new Padding(1, 0, 1, 12);
+            Controls.Add(content);
+            // Dock the title bar first, then fill the remaining space with content.
+            themeBar.SendToBack();
             loading = new Label();
             loading.Text = "Memuat Muse...";
             loading.ForeColor = Ivory;
             loading.Font = new Font(Ui.FontName, 10);
-            loading.Location = new Point(1, 52);
-            loading.Size = new Size(390, 536);
-            loading.Anchor = AnchorStyles.Top | AnchorStyles.Bottom
-                | AnchorStyles.Left | AnchorStyles.Right;
+            loading.Dock = DockStyle.Fill;
             loading.TextAlign = ContentAlignment.MiddleCenter;
-            Controls.Add(loading);
+            content.Controls.Add(loading);
 
             web = new WebView2();
-            web.Location = new Point(1, 52);
-            web.Size = new Size(390, 536);
-            web.Anchor = AnchorStyles.Top | AnchorStyles.Bottom
-                | AnchorStyles.Left | AnchorStyles.Right;
+            web.Dock = DockStyle.Fill;
             web.Visible = false;
-            Controls.Add(web);
+            content.Controls.Add(web);
 
             VisibleChanged += delegate { if (Visible) ApplyRegion(); };
             SizeChanged += delegate { if (Visible) ApplyRegion(); };
