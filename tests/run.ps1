@@ -11,9 +11,13 @@ try {
     $common = @('/nologo', '/target:winexe', '/platform:x64', '/win32manifest:app.manifest',
         '/resource:MuseTheme.js,MuseTheme.js', '/resource:MuseTheme.css,MuseTheme.css',
         '/r:System.Windows.Forms.dll', '/r:System.Drawing.dll', '/r:System.Web.Extensions.dll',
-        "/r:$output/Microsoft.Web.WebView2.Core.dll", "/r:$output/Microsoft.Web.WebView2.WinForms.dll",
-        'MuseBubbleWin.cs', 'AppleTheme.cs', 'FilePickerBridge.cs', 'MuseOfficialIcon.cs')
-    & $compiler @common '/main:MuseBubbleWin.ThemeChecks' "/out:$output/ThemeChecks.exe" (Join-Path $PSScriptRoot 'ThemeChecks.cs')
+        "/r:$output/Microsoft.Web.WebView2.Core.dll", "/r:$output/Microsoft.Web.WebView2.WinForms.dll")
+    $appSources = @('MuseBubbleWin.cs', 'AppleTheme.cs', 'FilePickerBridge.cs', 'MuseOfficialIcon.cs')
+    # Framework csc treats /out after source files as a new output-file boundary.
+    # Keep every compiler option, including /main and /out, before every source.
+    $themeArguments = @('/main:MuseBubbleWin.ThemeChecks', "/out:$output/ThemeChecks.exe") +
+        $common + $appSources + @((Join-Path $PSScriptRoot 'ThemeChecks.cs'))
+    & $compiler @themeArguments
     if ($LASTEXITCODE -ne 0) { throw 'Native theme test compilation failed.' }
     $process = Start-Process (Join-Path $output 'ThemeChecks.exe') -WindowStyle Hidden -PassThru
     if (!$process.WaitForExit(30000)) { $process.Kill(); throw 'Native theme tests timed out.' }
