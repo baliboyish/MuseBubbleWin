@@ -44,6 +44,15 @@ Full details in [Controls](#controls).
 The app does not require an OpenAI API key. Any Muse account or service charges are
 separate from this wrapper.
 
+## Install
+
+Download `MuseBubbleWin-windows-x64.zip` from the
+[latest release](https://github.com/baliboyish/MuseBubbleWin/releases/latest),
+extract it to a user-writable folder (keep all files together), and run
+`MuseBubbleWin.exe`. Sign in with your own Muse account inside the bubble.
+To update, replace the folder's contents with the newer release's; your settings
+and sign-in live under `%APPDATA%/MuseBubbleWin/` and are kept.
+
 ## Build and run
 
 Fork or download this repository, then in PowerShell on Windows:
@@ -125,8 +134,8 @@ repaint behavior on every GPU/DPI setup, or the current third-party chat layout.
   Chooser interception relies on experimental Chrome DevTools Protocol APIs.
 - The app is x64; ARM64 and x86 builds are not tested.
 - Borderless-window effects depend on the Windows version and display configuration.
-- The SDK-style NuGet build and GitHub workflow need their own successful CI run;
-  the original local verification used the .NET Framework compiler and existing SDK DLLs.
+- Release builds come from the GitHub Actions workflow; the downloadable zip is
+  the CI artifact of the tagged commit.
 
 ## Forking and contributing
 
