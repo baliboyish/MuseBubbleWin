@@ -23,6 +23,8 @@ These previews show the app's native controls, not a fabricated chat conversatio
 | --- | --- |
 | ![Light quick panel](docs/images/panel-light.png) | ![Dark quick panel](docs/images/panel-dark.png) |
 
+![Muse Bubble on the desktop, light theme](docs/images/Screenshot%202026-11-16%20225409.png)
+
 ## Requirements
 
 - Windows 10/11, x64, with .NET Framework 4.8 or later.
