@@ -25,6 +25,15 @@ These previews show the app's native controls, not a fabricated chat conversatio
 
 ![Muse Bubble on the desktop, light theme](docs/images/Screenshot%202026-11-16%20225409.png)
 
+### Quick guide
+
+- **One click** on the bubble opens or closes the chat; **double-click** opens Muse in your browser.
+- **Drag** the bubble anywhere — its position is remembered. **Hover** over it for the quick-action panel.
+- **Scroll** on the bubble to resize it; **Ctrl+scroll** changes its opacity.
+- In the chat window: the **pin** icon keeps it on top, the **sun/moon** switches light/dark, and the **+** in the message box attaches a file.
+
+Full details in [Controls](#controls).
+
 ## Requirements
 
 - Windows 10/11, x64, with .NET Framework 4.8 or later.
@@ -72,6 +81,9 @@ No prebuilt executable or browser profile is committed to the source repository.
 - Click the sun/moon to switch themes and the pin to toggle keeping chat on top.
 - Drag the chat title bar to move it.
 - Right-click that title bar to toggle **Style Muse page**, enable attachment tracing, or open DevTools.
+- Click **+** in the message box to attach a file; the app's own Windows file picker opens.
+- Double-click the tray icon (or choose **Tampilkan**) to bring back a hidden bubble.
+- Bubble position, size, opacity, and theme are remembered between runs.
 - Choose **Keluar** in the tray menu to quit. Closing/hiding chat leaves the bubble running.
 
 Some action labels are currently in Indonesian; localization contributions are welcome.
